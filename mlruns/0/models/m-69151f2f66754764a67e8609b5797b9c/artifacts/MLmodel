@@ -1,0 +1,20 @@
+artifact_path: file:///C:/Users/ELITEBOOK/Documents/Projects/MLOps/chest_cancer_prediction/mlruns/0/models/m-69151f2f66754764a67e8609b5797b9c/artifacts
+flavors:
+  keras:
+    data: data
+    keras_backend: tensorflow
+    keras_version: 3.13.0
+    save_exported_model: false
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.keras
+    python_version: 3.11.0
+mlflow_version: 3.8.1
+model_id: m-69151f2f66754764a67e8609b5797b9c
+model_size_bytes: 59141299
+model_uuid: m-69151f2f66754764a67e8609b5797b9c
+prompts: null
+run_id: 263c6487ce7b4a3d8c726b60d0012438
+utc_time_created: '2026-01-07 12:28:31.766778'
