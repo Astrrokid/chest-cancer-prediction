@@ -660,3 +660,4 @@ x==========x]
 [2026-01-08 10:12:42,730: INFO: stage_04_model_evaluation: >>>>>> stage Evaluation stage completed <<<<<<
 
 x==========x]
+[2026-01-10 02:34:21,321: WARNING: saving_utils: Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.]
