@@ -15,6 +15,5 @@ joblib
 types-pyYAML
 pydantic
 scipy
-Flask
-Flask-Cors
+fastapi
 -e .
