@@ -12,7 +12,7 @@ from cnnClassifier.pipeline.prediction import PredictionPipeline
 
 
 app = FastAPI()
-origins = ["http://localhost:8000"]
+origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

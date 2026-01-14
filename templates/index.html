@@ -173,7 +173,6 @@ function sendRequest(base64Data){
 				crossDomain: true,
 				headers: {
 					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin':"http://localhost:8000"
 				},
 				data:JSON.stringify({image:base64Data}),
 				success: function(res){
