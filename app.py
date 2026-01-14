@@ -16,7 +16,7 @@ origins = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -30,8 +30,8 @@ class ClientApp:
 
 clApp = ClientApp()
 @app.get('/', response_class=HTMLResponse)
-def home():
-    return templates.TemplateResponse('index.html', {'request': {}})
+def home(request: Request):
+    return templates.TemplateResponse('index.html', {'request': request})
 
 
 @app.post('/train')
@@ -45,7 +45,7 @@ async def predictRoute(request: Request):
     image = payload.get("image")
     decodeImage(image, filename=clApp.filename)
     result = clApp.classifier.predict()
-    return JSONResponse(content=result)
+    return JSONResponse(content=[result, {"image": image}])
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
