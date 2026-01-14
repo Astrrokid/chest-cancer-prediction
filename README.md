@@ -1,174 +1,166 @@
-Chest Cancer Prediction – End-to-End MLOps Pipeline
-===================================================
+# End-to-End-Chest-Cancer-Prediction-using-MLflow-DVC
 
-This repository contains a production-oriented MLOps pipeline for chest-cancer image classification using chest CT scans.
-The solution is implemented in TensorFlow/Keras (VGG16 backbone) and is designed to be:
-
-- Configuration-driven (via YAML files and typed config entities)
-- Modular and reproducible (explicit components and pipeline stages)
-- Observable (evaluation metrics and models logged to MLflow / Dagshub)
+This repository implements an end-to-end MLOps pipeline for classifying chest CT scan images into cancer / non-cancer classes using TensorFlow/Keras (VGG16), MLflow for experiment tracking, DVC for data & pipeline versioning, and AWS + GitHub Actions for CI/CD and container deployment.
 
 
-Overview
---------
+## Workflows
 
-The pipeline automates the following high-level steps:
-
-1. **Data ingestion** – Downloading and unpacking the chest CT scan dataset into a well-defined artifacts structure.
-2. **Base model preparation** – Loading VGG16 with ImageNet weights, attaching a classification head, and exporting reusable base models.
-3. **Model training** – Fine-tuning the model on the ingested dataset with configurable hyperparameters.
-4. **Model evaluation & logging** – Evaluating the trained model on a validation split and logging results and models to MLflow.
-
-The same logic is available both as Python modules under `src/cnnClassifier` and as research notebooks under `research/` for experimentation.
-
-
-Key Features
-------------
-
-- Clear separation of concerns between configuration, components, and pipeline orchestration.
-- Typed configuration entities using Pydantic dataclasses for safer configuration management.
-- Config-driven hyperparameters (`params.yaml`) for image size, batch size, epochs, augmentation, and learning rate.
-- MLflow / Dagshub integration for metric logging and model registry (VGG16-based model).
-- Artifacts-first design: each stage reads from and writes to the `artifacts/` directory, enabling reproducibility and downstream automation.
+1. Update `config/config.yaml` (artifacts, data paths, MLflow settings).
+2. [Optional] Update secrets configuration (for example `secrets.yaml` if you maintain credentials in a file).
+3. Update `params.yaml` (model and training hyperparameters).
+4. Update the config entities in `src/cnnClassifier/entity/`.
+5. Update the configuration manager in `src/cnnClassifier/config/configuration.py`.
+6. Update or create components in `src/cnnClassifier/components/`.
+7. Update pipeline stages in `src/cnnClassifier/pipeline/`.
+8. Update `main.py` if you add, remove, or reorder stages.
+9. Update `dvc.yaml` to reflect the pipeline stages and dependencies.
 
 
-Technology Stack
-----------------
+## MLflow
 
-- **Language & runtime**: Python
-- **Deep learning**: TensorFlow / Keras (VGG16)
-- **Configuration**: YAML (`config/config.yaml`, `params.yaml`) + Pydantic dataclasses
-- **Experiment tracking**: MLflow, hosted on Dagshub
-- **Orchestration**: Python pipeline scripts (`src/cnnClassifier/pipeline`) and `main.py`
+- [Documentation](https://mlflow.org/docs/latest/index.html)
+- [MLflow tutorial](https://youtube.com/playlist?list=PLkz_y24mlSJZrqiZ4_cLUiP0CBN5wFmTb&si=zEp_C8zLHt1DzWKK)
 
-
-Project Structure
------------------
-
-- `config/`
-  - `config.yaml` – High-level configuration for artifacts, data ingestion, base model paths, and training outputs.
-- `params.yaml` – Model and training hyperparameters (image size, batch size, epochs, learning rate, etc.).
-- `src/cnnClassifier/`
-  - `config/` – `configuration.py` builds typed config objects from YAML files.
-  - `entity/` – Pydantic dataclasses for configuration entities (data ingestion, base model, training, evaluation).
-  - `components/` – Reusable building blocks:
-    - `data_ingestion.py`
-    - `prepare_base_model.py`
-    - `model_trainer.py`
-    - `model_evaluation.py` (evaluation + MLflow logging)
-  - `pipeline/` – Orchestrated training stages:
-    - `stage_01_data_ingestion.py`
-    - `stage_02_prepare_base_model.py`
-    - `stage_03_model_trainer.py`
-    - `stage_04_model_evaluation.py`
-- `research/` – Jupyter notebooks that mirror the production pipeline logic for experimentation.
-- `artifacts/` – Auto-created directory for downloaded data, intermediate models, and the final trained model.
-- `main.py` – Entry point that runs the full pipeline end-to-end.
-- `dvc.yaml` – Placeholder for DVC pipeline definitions (optional, for data and pipeline versioning).
+##### cmd
+- `mlflow ui` (runs the local UI over the `mlruns/` directory)
 
 
-Getting Started
----------------
+### Dagshub
 
-### 1. Clone the repository
+[Dagshub project](https://dagshub.com/Astrrokid/chest-cancer-prediction)  
+Remote MLflow tracking URI: `https://dagshub.com/Astrrokid/chest-cancer-prediction.mlflow`
 
-Clone this project and switch into the project directory.
+Run training with remote MLflow tracking:
 
-### 2. Create and activate a virtual environment
+```bash
+MLFLOW_TRACKING_URI=https://dagshub.com/Astrrokid/chest-cancer-prediction.mlflow \
+MLFLOW_TRACKING_USERNAME=<your_dagshub_username> \
+MLFLOW_TRACKING_PASSWORD=<your_dagshub_token> \
+python main.py
+```
 
-It is recommended to isolate dependencies using a virtual environment (example using `venv`):
+Export these as environment variables (Linux/macOS):
 
-- Create and activate a virtual environment in the project root (for example, named `chest-cancer`).
+```bash
+export MLFLOW_TRACKING_URI=https://dagshub.com/Astrrokid/chest-cancer-prediction.mlflow
+export MLFLOW_TRACKING_USERNAME=<your_dagshub_username>
+export MLFLOW_TRACKING_PASSWORD=<your_dagshub_token>
+```
 
-### 3. Install dependencies
+On Windows PowerShell:
 
-From the project root, install the Python dependencies:
-
-- `pip install -r requirements.txt`
-
-### 4. Configure the project
-
-- Update `config/config.yaml` to reflect:
-  - Artifact locations (for example, `artifacts/...` paths)
-  - Data ingestion source URL and paths
-  - Base model and training model output locations
-- Update `params.yaml` to tune:
-  - `IMAGE_SIZE`
-  - `BATCH_SIZE`
-  - `EPOCHS`
-  - `AUGMENTATION`
-  - `LEARNING_RATE`
-
-
-Running the Pipeline
---------------------
-
-To execute the full training workflow end-to-end, run from the project root:
-
-- `python main.py`
-
-This triggers the following stages in sequence:
-
-1. **Data Ingestion (`stage_01_data_ingestion.py`)**
-   - Downloads the chest CT scan dataset.
-   - Stores the raw archive and extracted files under `artifacts/data_ingestion`.
-2. **Prepare Base Model (`stage_02_prepare_base_model.py`)**
-   - Loads VGG16 with ImageNet weights.
-   - Attaches the classification head and compiles the model.
-   - Saves both the base and updated models under `artifacts/prepare_base_model`.
-3. **Model Training (`stage_03_model_trainer.py`)**
-   - Loads the updated base model.
-   - Builds training and validation generators from the ingested dataset.
-   - Trains the model and saves the final weights to `artifacts/training/model.h5`.
-4. **Model Evaluation (`stage_04_model_evaluation.py`)**
-   - Loads the trained model.
-   - Evaluates it on the validation split.
-   - Persists evaluation metrics to `scores.json` and can log results to MLflow.
-
-Each stage script can also be executed independently for debugging or development by running the corresponding `stage_0X_*.py` module.
+```powershell
+$env:MLFLOW_TRACKING_URI="https://dagshub.com/Astrrokid/chest-cancer-prediction.mlflow"
+$env:MLFLOW_TRACKING_USERNAME="<your_dagshub_username>"
+$env:MLFLOW_TRACKING_PASSWORD="<your_dagshub_token>"
+python main.py
+```
 
 
-MLflow and Dagshub Integration
-------------------------------
+### DVC cmd
 
-- The evaluation configuration (`ConfigurationManager.get_evaluation_config`) sets `mlflow_uri` to the Dagshub MLflow endpoint:
-  - `https://dagshub.com/Astrrokid/chest-cancer-prediction.mlflow`
-- The `Evaluation.log_into_mlflow()` method in `src/cnnClassifier/components/model_evaluation.py`:
-  - Sets the MLflow registry URI.
-  - Logs parameters (from `params.yaml`) and evaluation metrics (`loss`, `accuracy`).
-  - Logs and, when supported by the backend store, registers the trained Keras model (`VGG16Model`) in the MLflow Model Registry.
-- To ensure runs and models appear in the expected MLflow UI:
-  - Confirm that `evaluation.log_into_mlflow()` is invoked from `stage_04_model_evaluation.py`.
-  - Ensure your `MLFLOW_TRACKING_URI` or configuration matches the Dagshub MLflow URL you are monitoring.
+1. `dvc init` – initialize DVC in the repository (run once).
+2. `dvc repro` – reproduce the full pipeline defined in `dvc.yaml`.
+3. `dvc dag` – visualize the pipeline: `data_ingestion → prepare_base_model → training → evaluation`.
 
 
-Development Workflow
---------------------
+## About MLflow & DVC
 
-When extending or modifying the project, the recommended workflow is:
+MLflow
 
-1. Update `config/config.yaml` with new artifact paths or data sources as needed.
-2. Optionally update secrets configuration for credentials (for example, `secrets.yaml` if used).
-3. Update `params.yaml` to reflect new or changed hyperparameters.
-4. Update configuration entities in `src/cnnClassifier/entity/` if you add or modify configuration fields.
-5. Update the configuration manager in `src/cnnClassifier/config/configuration.py` to construct and expose the revised entities.
-6. Implement or adjust components under `src/cnnClassifier/components/` to introduce new behavior.
-7. Wire components together in pipeline stages under `src/cnnClassifier/pipeline/`.
-8. Update `main.py` if you add, remove, or reorder pipeline stages.
-9. Optionally update `dvc.yaml` to version data and pipeline steps with DVC.
-
-This approach keeps the codebase modular, testable, and easy to reason about as requirements evolve.
+- Production-grade experiment tracker and model registry.
+- Tracks all chest-cancer experiments, parameters, metrics, and artifacts.
+- Logs and (optionally) registers the VGG16-based classification model.
 
 
-Notebooks
----------
+DVC 
 
-The `research/` directory contains Jupyter notebooks that support experimentation and rapid prototyping:
+- Lightweight experiment and data versioning; ideal for this POC and future extensions.
+- Tracks dataset and model artifacts under `artifacts/`.
+- Orchestrates pipeline stages via `dvc.yaml` (data ingestion, base model preparation, training, evaluation).
 
-- `01_data_ingestion.ipynb` – Prototyping and validating the data ingestion step.
-- `02_prepare_base_model.ipynb` – Exploring base model creation and fine-tuning strategies.
-- `03_model_trainer.ipynb` – Prototyping training, data loaders, and training loops.
-- `04_model_evaluation_with_mlflow.ipynb` – Prototyping evaluation and MLflow / Dagshub integration.
 
-These notebooks closely mirror the production pipeline logic and are useful for debugging, exploratory analysis, and communicating design choices before formalizing changes into the `src/` codebase.
+# AWS-CICD-Deployment-with-Github-Actions
+
+This project ships a Dockerized FastAPI app (`app.py`) that exposes training and prediction endpoints and is deployed to AWS using GitHub Actions, Amazon ECR, and an EC2-based self-hosted runner.
+
+
+## 1. Login to AWS console
+
+Use an AWS account with permissions to manage IAM, ECR, and EC2.
+
+
+## 2. Create IAM user for deployment
+
+With specific access:
+
+1. EC2 access – to manage the virtual machine used as a self-hosted runner / app host.
+2. ECR – Elastic Container Registry access to push and pull the Docker image for this project.
+
+Recommended policies:
+
+1. `AmazonEC2ContainerRegistryFullAccess`
+2. `AmazonEC2FullAccess`
+
+
+## 3. Create ECR repo to store/save Docker image
+
+Create an ECR repository dedicated to this project (for example `chest-cancer-prediction`) and save the URI, e.g.:
+
+- `<AWS_ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/chest-cancer-prediction`
+
+
+## 4. Create EC2 machine (Ubuntu)
+
+Provision an Ubuntu EC2 instance that will:
+
+- Host the Dockerized chest-cancer prediction app.
+- Act as a self-hosted GitHub Actions runner for the deployment job.
+
+
+## 5. Open EC2 and install Docker in EC2 machine
+
+Optional:
+
+```bash
+sudo apt-get update -y
+sudo apt-get upgrade -y
+```
+
+Required:
+
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker ubuntu
+newgrp docker
+```
+
+
+## 6. Configure EC2 as self-hosted runner
+
+In your GitHub repository:
+
+- Go to `Settings > Actions > Runners > New self-hosted runner`.
+- Choose OS (Linux) and architecture.
+- Run the provided commands on the EC2 instance.
+
+The deployment job in `.github/workflows/main.yaml` uses `runs-on: self-hosted`.
+
+
+## 7. Setup GitHub secrets
+
+Configure the following secrets under `Settings > Secrets and variables > Actions`:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION` (e.g. `us-east-1`)
+- `AWS_ECR_LOGIN_URI` (e.g. `<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com`)
+- `ECR_REPOSITORY_NAME` (e.g. `chest-cancer-prediction`)
+
+The GitHub Actions workflow will:
+
+- Build the Docker image from this repository (using `Dockerfile`, which runs `app.py` on port 8000).
+- Push the image to the configured ECR repository.
+- On the self-hosted EC2 runner, pull the latest image from ECR and run the container as `cnncls` with `-p 8000:8000`.
 
